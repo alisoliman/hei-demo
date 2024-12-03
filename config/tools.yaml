@@ -1,5 +1,5 @@
 local:
-  weather: {}
+  weather: {}  # Uses OpenMeteo API
   bing_search:
     k: 3  # Number of search results to return
 llamahub: {}
