@@ -22,6 +22,9 @@ def bing_search(query: str, k: int = 3) -> BingSearchResults:
     Returns:
         BingSearchResults: Search results from Bing
     """
+    if isinstance(query, dict) and 'query' in query:
+        query = query['query']
+    
     subscription_key = os.getenv("BING_SEARCH_KEY")
     
     if not subscription_key:

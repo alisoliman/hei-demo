@@ -5,6 +5,8 @@ from llama_index.core.tools.query_engine import QueryEngineTool
 from llama_index.core.query_engine import RetrieverQueryEngine
 from app.engine.index import IndexType, IndexConfig, get_index
 from llama_index.core.callbacks import CallbackManager
+from .tripadvisor import get_tools as get_tripadvisor_tools
+from .bing_search import get_tools as get_bing_tools
 
 
 def create_query_engine(index, callback_manager: Optional[CallbackManager] = None, **kwargs):
@@ -110,13 +112,21 @@ def get_all_query_tools(callback_manager: Optional[CallbackManager] = None, **kw
     """Get all available query tools."""
     tools = []
     
+    # Add venue query tool
     venue_tool = get_venue_query_tool(callback_manager=callback_manager, **kwargs)
     if venue_tool:
         tools.append(venue_tool)
         
+    # Add general query tool
     general_tool = get_general_query_tool(callback_manager=callback_manager, **kwargs)
     if general_tool:
         tools.append(general_tool)
+    
+    # Add Bing search tool
+    tools.extend(get_bing_tools())
+    
+    # Add TripAdvisor tool
+    tools.extend(get_tripadvisor_tools())
     
     return tools
 
