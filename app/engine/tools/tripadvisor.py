@@ -25,12 +25,29 @@ def get_tripadvisor_reviews(location_id: str, limit: int = 5) -> TripAdvisorResp
     Fetch reviews for a specific location from TripAdvisor.
     
     Args:
-        location_id (str): The TripAdvisor location ID
+        location_id (str): The TripAdvisor location ID (must be a numeric ID between 5-10 digits)
         limit (int): Number of reviews to retrieve (default: 5)
         
     Returns:
         TripAdvisorResponse: Structured response containing reviews and metadata
     """
+    # Validate that location_id looks like a TripAdvisor ID
+    if not location_id.isdigit():
+        raise ValueError(
+            "Invalid TripAdvisor ID format. Expected a numeric ID, got: '{}'. "
+            "You must first use the venue_query tool to get the correct TripAdvisor ID."
+            .format(location_id)
+        )
+    
+    # Additional validation for length (TripAdvisor IDs are typically 5-10 digits)
+    if len(location_id) < 5 or len(location_id) > 10:
+        raise ValueError(
+            "Invalid TripAdvisor ID length. Expected 5-10 digits, got: {} digits. "
+            "This doesn't look like a valid TripAdvisor ID. "
+            "Street numbers and other numeric values are not valid TripAdvisor IDs."
+            .format(len(location_id))
+        )
+
     api_key = os.getenv("TRIPADVISOR_API_KEY")
     if not api_key:
         raise ValueError("TRIPADVISOR_API_KEY environment variable is not set")
@@ -39,7 +56,7 @@ def get_tripadvisor_reviews(location_id: str, limit: int = 5) -> TripAdvisorResp
     params = {
         'key': api_key,
         'limit': limit,
-        'language': 'en'
+        'language': 'pt'
     }
     
     try:
@@ -113,13 +130,22 @@ def get_tools(**kwargs) -> List[FunctionTool]:
         FunctionTool.from_defaults(
             fn=get_tripadvisor_reviews,
             name="get_tripadvisor_reviews",
-            description="""Use this tool to fetch and analyze TripAdvisor reviews for a specific venue.
-            The tool will return:
+            description="""Use this tool to get TripAdvisor reviews for a specific venue.
+            
+            IMPORTANT: You MUST follow these steps:
+            1. FIRST use the venue_query tool to get the venue's TripAdvisor ID
+            2. ONLY use the numeric TripAdvisor ID returned by venue_query
+            3. NEVER use venue names or text as IDs
+            
+            This tool provides:
             - Latest reviews with ratings and comments
             - Average rating
             - Total number of reviews retrieved
+
+            Example:
+            WRONG: get_tripadvisor_reviews("Vista Jardins")
+            RIGHT: First use venue_query to get ID, then get_tripadvisor_reviews("123456")
             
-            Only use this tool when you need to provide information about customer reviews and ratings from TripAdvisor.
-            You must provide a valid TripAdvisor location ID."""
+            You must provide a valid numeric TripAdvisor location ID."""
         )
     ]

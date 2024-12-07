@@ -70,6 +70,12 @@ def get_venue_query_tool(callback_manager: Optional[CallbackManager] = None, **k
     - Opening hours
     - Promotions and special offers
     - Accessibility features
+    - TripAdvisor information
+    
+    IMPORTANT FOR TRIPADVISOR:
+    - When the query includes "TripAdvisor ID", focus on finding and returning the ID
+    - Always format TripAdvisor IDs as 'TripAdvisor ID: [number]'
+    - If no TripAdvisor ID is found, explicitly state that
     
     Only use this tool for venue-related queries."""
     

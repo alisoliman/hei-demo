@@ -28,9 +28,12 @@ def generate_index(documents: List[Document], index_type: IndexType):
     for doc in documents:
         doc.metadata["private"] = "false"
 
-    # Configure node parser with appropriate chunk size
-    chunk_size = 4096 if index_type == IndexType.VENUE else 1024
-    node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=20)
+    # For venue data, each row is already its own chunk, so we don't need the node parser
+    if index_type == IndexType.VENUE:
+        node_parser = None
+    else:
+        # For other documents, use sentence splitter with normal chunk size
+        node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
 
     # Create index with settings
     logger.info(f"Creating new {index_type.value} index")

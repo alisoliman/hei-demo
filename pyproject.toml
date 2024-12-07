@@ -50,6 +50,7 @@ version = "^0.4.0"
 [tool.poetry.group.dev]
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
+ipykernel = "^6.29.5"
 
 [tool.mypy]
 python_version = "3.11"

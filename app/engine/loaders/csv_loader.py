@@ -10,51 +10,70 @@ logger = logging.getLogger(__name__)
 
 def process_csv_file(file_path: str) -> List[Document]:
     """
-    Process a CSV file and create structured documents that preserve the tabular format.
-    Each row becomes a document with minimal metadata to avoid size issues.
+    Process a CSV file and create structured documents.
+    Each row becomes a document with its own chunk, preserving column names as context.
     """
     try:
         # Read CSV file
         df = pd.read_csv(file_path)
         
-        # Convert DataFrame to list of documents
-        documents = []
-        
         # Get the filename without extension
         file_name = os.path.splitext(os.path.basename(file_path))[0]
         
+        # Create a list to store documents
+        documents = []
+        
         # Process each row
         for idx, row in df.iterrows():
-            # Create content string with all information
-            content_parts = []
+            # Create metadata dictionary
             metadata = {
                 "src": file_name,
                 "idx": idx,
                 "type": "row"
             }
             
-            # Select key columns for metadata (adjust these based on your needs)
-            key_columns = ["Venue Name", "City", "State"]  # Add important columns here
+            # Build content with column names as context
+            content_parts = []
             
+            # First, add TripAdvisor ID if it exists (make it prominent)
+            if 'TripAdvisor ID' in df.columns:
+                tripadvisor_id = str(row['TripAdvisor ID']).strip()
+                if tripadvisor_id:
+                    content_parts.extend([
+                        f"TripAdvisor ID: {tripadvisor_id}",
+                        f"The TripAdvisor location ID for this venue is {tripadvisor_id}",
+                        f"To get TripAdvisor reviews, use ID: {tripadvisor_id}",
+                        ""  # Empty line for separation
+                    ])
+                    metadata["tripadvisor_id"] = tripadvisor_id
+            
+            # Add venue name if it exists (also make it prominent)
+            venue_name_cols = ['OutletName', 'Venue Name', 'g_name']
+            for col in venue_name_cols:
+                if col in df.columns:
+                    value = str(row[col]).strip()
+                    if value:
+                        content_parts.extend([
+                            f"Venue Name: {value}",
+                            ""  # Empty line for separation
+                        ])
+                        metadata["venue_name"] = value
+                        break
+            
+            # Add all other fields with their column names
             for col in df.columns:
-                value = str(row[col])
-                content_parts.append(f"{col}: {value}")
-                
-                # Only add important columns to metadata
-                if col in key_columns:
-                    key = col.lower().replace(" ", "_")[:10]  # Limit key length
-                    metadata[key] = value[:100]  # Limit value length
+                value = str(row[col]).strip()
+                if value and col not in ['TripAdvisor ID']:  # Skip TripAdvisor ID as it's already added
+                    content_parts.append(f"{col}: {value}")
             
-            # Create document
+            # Create document with the formatted content
             content = "\n".join(content_parts)
             doc = Document(
                 text=content,
                 metadata=metadata,
-                metadata_mode=MetadataMode.ALL,
-                excluded_llm_metadata_keys=["idx", "src", "type"]
             )
             documents.append(doc)
-            
+        
         return documents
         
     except Exception as e:
