@@ -9,7 +9,8 @@ from llama_index.core.tools import BaseTool
 from app.engine.index import IndexConfig
 from app.engine.tools import ToolFactory
 from app.engine.tools.query_engine import get_all_query_tools
-
+from app.engine.tools.tripadvisor import get_tools as get_tripadvisor_tools
+from app.engine.tools.chinchin_api import get_tools as get_chinchin_tools
 
 def get_chat_engine(params=None, event_handlers=None, **kwargs):
     system_prompt = os.getenv("SYSTEM_PROMPT", """You are a helpful assistant with access to multiple knowledge bases. 
@@ -53,6 +54,12 @@ def get_chat_engine(params=None, event_handlers=None, **kwargs):
         **kwargs
     )
     tools.extend(query_tools)
+
+    # Add TripAdvisor tools
+    tools.extend(get_tripadvisor_tools())
+    
+    # Add Chinchin API tools
+    tools.extend(get_chinchin_tools())
 
     # Add additional tools
     configured_tools: List[BaseTool] = ToolFactory.from_env()

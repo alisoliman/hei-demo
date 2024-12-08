@@ -1,20 +1,20 @@
+from typing import Dict, List, Optional
 import os
 import requests
-from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 from llama_index.core.tools import FunctionTool
 
 class ReviewData(BaseModel):
     """Data model for a TripAdvisor review."""
-    rating: int = Field(..., description="Rating given by the reviewer (1-5)")
+    rating: int = Field(..., description="Rating given in the review")
     title: str = Field(..., description="Title of the review")
-    text: str = Field(..., description="Full text of the review")
-    published_date: str = Field(..., description="Date when the review was published")
-    username: str = Field(..., description="Name of the reviewer")
+    text: str = Field(..., description="Text content of the review")
+    published_date: str = Field(..., description="Date when review was published")
+    username: str = Field(..., description="Username of the reviewer")
     language: str = Field(..., description="Language of the review")
 
 class TripAdvisorResponse(BaseModel):
-    """Response from TripAdvisor API."""
+    """Response model for TripAdvisor data."""
     location_id: str = Field(..., description="TripAdvisor location ID")
     reviews: List[ReviewData] = Field(..., description="List of reviews")
     average_rating: Optional[float] = Field(None, description="Average rating from reviews")
@@ -107,7 +107,7 @@ def format_reviews_markdown(response: TripAdvisorResponse) -> str:
     """Format TripAdvisor reviews as markdown for display."""
     sections = []
     
-    # Add header with average rating
+    # Add header with rating
     if response.average_rating is not None:
         stars = "⭐" * round(response.average_rating)
         sections.append(f"### TripAdvisor Reviews {stars}\n")
@@ -124,7 +124,7 @@ def format_reviews_markdown(response: TripAdvisorResponse) -> str:
     
     return "\n".join(sections)
 
-def get_tools(**kwargs) -> List[FunctionTool]:
+def get_tools():
     """Get the TripAdvisor tools."""
     return [
         FunctionTool.from_defaults(
@@ -138,10 +138,10 @@ def get_tools(**kwargs) -> List[FunctionTool]:
             3. NEVER use venue names or text as IDs
             
             This tool provides:
-            - Latest reviews with ratings and comments
+            - Review text and ratings
             - Average rating
-            - Total number of reviews retrieved
-
+            - Total number of reviews
+            
             Example:
             WRONG: get_tripadvisor_reviews("Vista Jardins")
             RIGHT: First use venue_query to get ID, then get_tripadvisor_reviews("123456")
