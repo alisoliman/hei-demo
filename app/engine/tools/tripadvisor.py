@@ -1,8 +1,11 @@
 from typing import Dict, List, Optional
 import os
 import requests
+import logging
 from pydantic import BaseModel, Field
 from llama_index.core.tools import FunctionTool
+
+logger = logging.getLogger(__name__)
 
 class ReviewData(BaseModel):
     """Data model for a TripAdvisor review."""
@@ -29,37 +32,54 @@ def get_tripadvisor_reviews(location_id: str, limit: int = 5) -> TripAdvisorResp
         limit (int): Number of reviews to retrieve (default: 5)
         
     Returns:
-        TripAdvisorResponse: Structured response containing reviews and metadata
+        TripAdvisorResponse: Structured response containing reviews and metadata.
+        Returns empty response if any error occurs.
     """
-    # Validate that location_id looks like a TripAdvisor ID
-    if not location_id.isdigit():
-        raise ValueError(
-            "Invalid TripAdvisor ID format. Expected a numeric ID, got: '{}'. "
-            "You must first use the venue_query tool to get the correct TripAdvisor ID."
-            .format(location_id)
-        )
-    
-    # Additional validation for length (TripAdvisor IDs are typically 5-10 digits)
-    if len(location_id) < 5 or len(location_id) > 10:
-        raise ValueError(
-            "Invalid TripAdvisor ID length. Expected 5-10 digits, got: {} digits. "
-            "This doesn't look like a valid TripAdvisor ID. "
-            "Street numbers and other numeric values are not valid TripAdvisor IDs."
-            .format(len(location_id))
-        )
-
-    api_key = os.getenv("TRIPADVISOR_API_KEY")
-    if not api_key:
-        raise ValueError("TRIPADVISOR_API_KEY environment variable is not set")
-
-    url = f"https://api.content.tripadvisor.com/api/v1/location/{location_id}/reviews"
-    params = {
-        'key': api_key,
-        'limit': limit,
-        'language': 'pt'
-    }
-    
     try:
+        # Validate that location_id looks like a TripAdvisor ID
+        if not location_id.isdigit():
+            logger.error(
+                f"Invalid TripAdvisor ID format. Expected a numeric ID, got: '{location_id}'. "
+                "You must first use the venue_query tool to get the correct TripAdvisor ID."
+            )
+            return TripAdvisorResponse(
+                location_id=location_id,
+                reviews=[],
+                average_rating=0.0,
+                total_reviews=0
+            )
+        
+        # Additional validation for length (TripAdvisor IDs are typically 5-10 digits)
+        if len(location_id) < 5 or len(location_id) > 10:
+            logger.error(
+                f"Invalid TripAdvisor ID length. Expected 5-10 digits, got: {len(location_id)} digits. "
+                "This doesn't look like a valid TripAdvisor ID. "
+                "Street numbers and other numeric values are not valid TripAdvisor IDs."
+            )
+            return TripAdvisorResponse(
+                location_id=location_id,
+                reviews=[],
+                average_rating=0.0,
+                total_reviews=0
+            )
+
+        api_key = os.getenv("TRIPADVISOR_API_KEY")
+        if not api_key:
+            logger.error("TRIPADVISOR_API_KEY environment variable is not set")
+            return TripAdvisorResponse(
+                location_id=location_id,
+                reviews=[],
+                average_rating=0.0,
+                total_reviews=0
+            )
+
+        url = f"https://api.content.tripadvisor.com/api/v1/location/{location_id}/reviews"
+        params = {
+            'key': api_key,
+            'limit': limit,
+            'language': 'pt'
+        }
+        
         response = requests.get(url, params=params)
         response.raise_for_status()
         
@@ -71,16 +91,20 @@ def get_tripadvisor_reviews(location_id: str, limit: int = 5) -> TripAdvisorResp
         total_rating = 0
         
         for review in reviews_data:
-            review_data = ReviewData(
-                rating=review.get('rating', 0),
-                title=review.get('title', ''),
-                text=review.get('text', ''),
-                published_date=review.get('published_date', ''),
-                username=review.get('user', {}).get('username', 'Anonymous'),
-                language=review.get('language', 'en')
-            )
-            reviews.append(review_data)
-            total_rating += review_data.rating
+            try:
+                review_data = ReviewData(
+                    rating=review.get('rating', 0),
+                    title=review.get('title', ''),
+                    text=review.get('text', ''),
+                    published_date=review.get('published_date', ''),
+                    username=review.get('user', {}).get('username', 'Anonymous'),
+                    language=review.get('language', 'en')
+                )
+                reviews.append(review_data)
+                total_rating += review_data.rating
+            except Exception as e:
+                logger.error(f"Error processing review data: {str(e)}")
+                continue
         
         # Calculate average rating
         average_rating = total_rating / len(reviews) if reviews else 0
@@ -92,16 +116,31 @@ def get_tripadvisor_reviews(location_id: str, limit: int = 5) -> TripAdvisorResp
             total_reviews=len(reviews)
         )
         
-    except requests.RequestException as e:
+    except requests.exceptions.RequestException as e:
         error_msg = str(e)
-        if response.status_code == 401:
-            error_msg = "Invalid TripAdvisor API key. Please check your API key."
-        elif response.status_code == 404:
-            error_msg = f"Location ID {location_id} not found on TripAdvisor."
-        elif response.status_code == 429:
-            error_msg = "Rate limit exceeded. Please try again later."
-            
-        raise Exception(f"Error fetching TripAdvisor reviews: {error_msg}")
+        if hasattr(e, 'response') and e.response is not None:
+            if e.response.status_code == 401:
+                error_msg = "Invalid TripAdvisor API key. Please check your API key."
+            elif e.response.status_code == 404:
+                error_msg = f"Location ID {location_id} not found on TripAdvisor."
+            elif e.response.status_code == 429:
+                error_msg = "Rate limit exceeded. Please try again later."
+        
+        logger.error(f"Error fetching TripAdvisor reviews: {error_msg}")
+        return TripAdvisorResponse(
+            location_id=location_id,
+            reviews=[],
+            average_rating=0.0,
+            total_reviews=0
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error fetching TripAdvisor reviews: {str(e)}")
+        return TripAdvisorResponse(
+            location_id=location_id,
+            reviews=[],
+            average_rating=0.0,
+            total_reviews=0
+        )
 
 def format_reviews_markdown(response: TripAdvisorResponse) -> str:
     """Format TripAdvisor reviews as markdown for display."""

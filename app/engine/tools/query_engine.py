@@ -25,7 +25,7 @@ def create_query_engine(index, callback_manager: Optional[CallbackManager] = Non
     query_kwargs.pop('callback_manager', None)
     
     # Handle top_k parameter
-    top_k = int(os.getenv("TOP_K", 0))
+    top_k = int(os.getenv("TOP_K", 4))
     if top_k != 0 and query_kwargs.get("filters") is None:
         query_kwargs["similarity_top_k"] = top_k
     
@@ -62,8 +62,14 @@ def get_venue_query_tool(callback_manager: Optional[CallbackManager] = None, **k
     if not index:
         return None
         
-    description = """Use this tool to answer questions about venues, bars, and restaurants.
-    This includes information about:
+    description = """Use this tool for general questions about venues, bars, and restaurants.
+    This tool is best for broad queries about multiple venues or discovering new places.
+    
+    For specific venues or making reservations:
+    - Use 'search_venues_by_name' to find a specific venue and its TripAdvisor ID
+    - Use 'make_reservation' with the TripAdvisor ID to make a reservation
+    
+    This tool provides information about:
     - Location (city, state, address)
     - Features (outdoor seating, beer types served)
     - Ratings and reviews
@@ -72,12 +78,13 @@ def get_venue_query_tool(callback_manager: Optional[CallbackManager] = None, **k
     - Accessibility features
     - TripAdvisor information
     
-    IMPORTANT FOR TRIPADVISOR:
-    - When the query includes "TripAdvisor ID", focus on finding and returning the ID
-    - Always format TripAdvisor IDs as 'TripAdvisor ID: [number]'
-    - If no TripAdvisor ID is found, explicitly state that
+    Example queries:
+    - What bars in Sao Paulo serve draft beer?
+    - Which restaurants have outdoor seating?
+    - Tell me about venues with active promotions
+    - What are the popular dining spots in this area?
     
-    Only use this tool for venue-related queries."""
+    Note: For finding a specific venue or making reservations, use 'search_venues_by_name' instead."""
     
     query_engine = create_query_engine(index, callback_manager=callback_manager, **kwargs)
     return QueryEngineTool.from_defaults(
