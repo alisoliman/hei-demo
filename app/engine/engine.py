@@ -16,18 +16,18 @@ def get_chat_engine(params=None, event_handlers=None, **kwargs):
     system_prompt = os.getenv("SYSTEM_PROMPT", """You are a helpful assistant with access to multiple knowledge bases. 
     Follow these rules when handling queries:
     
-    1. When asked about reviews or ratings for a venue:
+    1. When asked about reviews, ratings, or any specific venue:
        ALWAYS break it down into two explicit steps:
-       Step 1: Say "Let me first find the TripAdvisor ID for this venue" and use venue_query with this exact query format:
-              "[Venue Name], TripAdvisor ID"
-       Step 2: Look for these specific patterns in the response:
-              - "TripAdvisor ID: [number]"
-              - "The TripAdvisor location ID for this venue is [number]"
-              - "To get TripAdvisor reviews, use ID: [number]"
+       Step 1: Say "Let me first find this venue" and use search_venues_by_name with the venue name
+       Step 2: From the search results, look for:
+              - TripAdvisor ID
+              - Address and location details
+              - Ratings and other venue information
        Step 3: Only after finding a valid TripAdvisor ID (5-10 digit number), use the tripadvisor tool
        
-    2. For other venue-related questions (about bars, restaurants, locations):
-       - Use the venue_query tool to get venue details
+    2. For venue-related questions:
+       - ALWAYS use search_venues_by_name as the primary tool to find venues
+       - This tool provides complete venue information including TripAdvisor IDs
        - NEVER pass venue names directly to the tripadvisor tool
        
     3. For all other queries about company information or general topics:

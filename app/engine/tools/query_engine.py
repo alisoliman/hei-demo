@@ -125,10 +125,10 @@ def get_all_query_tools(callback_manager: Optional[CallbackManager] = None, **kw
     """Get all available query tools."""
     tools = []
     
-    # Add venue query tool
-    venue_tool = get_venue_query_tool(callback_manager=callback_manager, **kwargs)
-    if venue_tool:
-        tools.append(venue_tool)
+    # Temporarily disabled venue query tool
+    # venue_tool = get_venue_query_tool(callback_manager=callback_manager, **kwargs)
+    # if venue_tool:
+    #     tools.append(venue_tool)
         
     # Add general query tool
     general_tool = get_general_query_tool(callback_manager=callback_manager, **kwargs)

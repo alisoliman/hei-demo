@@ -80,21 +80,15 @@ def get_tools(**kwargs) -> List[FunctionTool]:
         FunctionTool.from_defaults(
             fn=bing_search,
             name="bing_search",
-            description="""Use this tool ONLY when information cannot be found in our existing knowledge base and when the query requires current or external information. Specifically:
-
-1. For general world knowledge or current events NOT related to venues or company information
-2. For technical information about programming, frameworks, or tools
-3. For verification of external facts or statistics
-
-DO NOT use this tool for:
-- Venue-related queries (use venue_query instead)
-- Company documentation or policies (use general_query instead)
-- Internal business information
-
-Example appropriate queries:
-- "What are the latest web development best practices?"
-- "What is the current weather in Amsterdam?"
-- "What are recent changes in beer industry regulations?"
-"""
+            description="""Use this tool to search the internet for venue information that is not included in our knowledgebase.
+            
+            Before using this tool be sure to check the following:
+            - In case you need venue specific details (use search_venues_by_name instead)
+            - In case you needTripAdvisor data (use TripAdvisor tools)
+            
+            Args:
+                query (str): The search query
+                
+            Returns search results from Bing."""
         )
     ]

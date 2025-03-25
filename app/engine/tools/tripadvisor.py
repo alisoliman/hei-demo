@@ -40,7 +40,7 @@ def get_tripadvisor_reviews(location_id: str, limit: int = 5) -> TripAdvisorResp
         if not location_id.isdigit():
             logger.error(
                 f"Invalid TripAdvisor ID format. Expected a numeric ID, got: '{location_id}'. "
-                "You must first use the venue_query tool to get the correct TripAdvisor ID."
+                "You must first use the search_venues_by_name tool to get the correct TripAdvisor ID."
             )
             return TripAdvisorResponse(
                 location_id=location_id,
@@ -169,22 +169,17 @@ def get_tools():
         FunctionTool.from_defaults(
             fn=get_tripadvisor_reviews,
             name="get_tripadvisor_reviews",
-            description="""Use this tool to get TripAdvisor reviews for a specific venue.
+            description="""Get TripAdvisor reviews for a venue.
             
-            IMPORTANT: You MUST follow these steps:
-            1. FIRST use the venue_query tool to get the venue's TripAdvisor ID
-            2. ONLY use the numeric TripAdvisor ID returned by venue_query
-            3. NEVER use venue names or text as IDs
+            IMPORTANT: Do NOT use this tool directly with a venue name!
+            1. FIRST use the search_venues_by_name tool to get the venue's TripAdvisor ID
+            2. ONLY use the numeric TripAdvisor ID returned by search_venues_by_name
             
-            This tool provides:
-            - Review text and ratings
-            - Average rating
-            - Total number of reviews
-            
-            Example:
+            Args:
+                tripadvisor_id (str): The numeric TripAdvisor ID for the venue
+                
+            Examples:
             WRONG: get_tripadvisor_reviews("Vista Jardins")
-            RIGHT: First use venue_query to get ID, then get_tripadvisor_reviews("123456")
-            
-            You must provide a valid numeric TripAdvisor location ID."""
+            RIGHT: First use search_venues_by_name to get ID, then get_tripadvisor_reviews("123456")"""
         )
     ]
